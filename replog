@@ -1,0 +1,61 @@
+#!/usr/local/bin/python3
+import ast
+import builtins
+import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('path')
+
+STAGES = [
+    'if0', 'if1', 'if2', 'if3', 'if4',
+    'dec', 'dec.tb', 'ren.tb', 'ren.br', 'ren.ren1', 'dis.ren2', 'dis', 'iss',
+    'rrd', 'exe.in', 'exe.out', 'exe.br', 'bru.b1', 'bru.b2',
+    'mem', 'sxt', 'wb', 'com',
+]
+
+
+def print(*args, **kwargs):
+    try:
+        builtins.print(*args, **kwargs)
+    except BrokenPipeError:
+        sys.exit(0)
+
+
+def flush_logs(logs):
+    logs.sort()
+    for _, log in logs:
+        print(log)
+    print()
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+
+    stage_index = {s: i for i, s in enumerate(STAGES)}
+    print(stage_index)
+
+    last_cycles = 0
+    last_logs = []
+
+    with open(args.path) as f:
+        while True:
+            line = f.readline()
+            if not line:
+                flush_logs(last_logs)
+                break
+            line = line.strip()
+            if not line:
+                continue
+
+            if line.find("'cycles'") == -1:
+                continue
+            log = ast.literal_eval(line)
+            cycles, stage = log['cycles'], log['stage']
+
+            if cycles != last_cycles:
+                flush_logs(last_logs)
+                last_cycles = cycles
+                last_logs = []
+
+            last_logs.append((stage_index[stage], line))

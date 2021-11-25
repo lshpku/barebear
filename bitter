@@ -1,0 +1,48 @@
+#!/usr/local/bin/python3
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('args', nargs='*')
+
+
+def parse_line(args):
+    bits = []
+    for arg in args:
+        val, size = arg.split('.')
+        val, size = int(val, 0), int(size)
+        for i in range(size):
+            bits.append((val >> (size - i - 1)) & 1)
+    assert len(bits) == 32
+    bitval = 0
+    for i, v in enumerate(reversed(bits)):
+        bitval += v << i
+    return '0x%08x' % bitval
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+
+    # read from command line
+    if args.args:
+        inst = parse_line(args.args)
+        print(inst)
+
+    # read from stdin
+    else:
+        while True:
+            try:
+                line = input()
+            except EOFError:
+                break
+            try:
+                comment = line[line.index('#'):]
+                line = line[:line.index('#')]
+            except ValueError:
+                comment = ''
+
+            args = line.split()
+            if args:
+                inst = parse_line(args)
+                if comment:
+                    inst += ' ' + comment
+                print(inst)
