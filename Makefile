@@ -16,8 +16,8 @@ main: main.S $(LIBC) $(LIBS)
 %: %.c $(LIBC) $(LIBS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-dump: main
-	$(TOOLCHAIN)objdump -D $<
+%.dump: %
+	$(TOOLCHAIN)objdump -D $< > $@
 
-elf: main
+%.elf: %
 	$(TOOLCHAIN)readelf -e $<

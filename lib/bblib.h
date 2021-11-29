@@ -14,4 +14,22 @@ void _putchar(char character);
 
 void exit(int);
 
+#define DEFINE_CSRR(name, csr)      \
+    inline uint64_t __csrr_##name() \
+    {                               \
+        uint64_t result;            \
+        asm volatile("csrr %0, %1"  \
+                     : "=r"(result) \
+                     : "i"(csr));   \
+        return result;              \
+    }
+
+#define DEFINE_CSRW(name, csr)                \
+    inline void __csrw_##name(uint64_t value) \
+    {                                         \
+        asm volatile("csrw %0, %1"            \
+                     :                        \
+                     : "i"(csr), "r"(value)); \
+    }
+
 #endif

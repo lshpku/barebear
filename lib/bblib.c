@@ -47,9 +47,11 @@ int puts(const char *s)
     return si + syscall(SYSCALL_WRITE, 1, (size_t)b, bi + 1);
 }
 
+#define PUTCHAR_BUFFER_SIZE 256U
+
 void _putchar(char character)
 {
-    static char b[256];
+    static char b[PUTCHAR_BUFFER_SIZE];
     static int i = 0;
     b[i++] = character;
     if (character == '\n' || i == sizeof(b)) {
