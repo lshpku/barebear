@@ -33,29 +33,19 @@ long unsigned int strlen(const char *s)
 
 int puts(const char *s)
 {
-    char b[256];
-    int bi = 0, si = 0;
-    while (*s) {
-        si++;
-        b[bi++] = *(s++);
-        if (bi == 256) {
-            si += syscall(SYSCALL_WRITE, 1, (size_t)b, 256);
-            bi = 0;
-        }
-    }
-    b[bi] = '\n';
-    return si + syscall(SYSCALL_WRITE, 1, (size_t)b, bi + 1);
+    return syscall(SYSCALL_WRITE, 1, (size_t)s, strlen(s));
 }
 
-#define PUTCHAR_BUFFER_SIZE 256U
-
-void _putchar(char character)
+int putx(unsigned i)
 {
-    static char b[PUTCHAR_BUFFER_SIZE];
-    static int i = 0;
-    b[i++] = character;
-    if (character == '\n' || i == sizeof(b)) {
-        syscall(SYSCALL_WRITE, 1, (size_t)b, i);
-        i = 0;
+    char b[8];
+    for (int j = 0; j < 8; j++) {
+        int c = (i >> (j << 2)) & 0xF;
+        if (c < 10)
+            c += '0';
+        else
+            c += 'a' - 10;
+        b[7 - j] = c;
     }
+    return syscall(SYSCALL_WRITE, 1, (uint64_t)b, sizeof(b));
 }
