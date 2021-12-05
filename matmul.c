@@ -1,5 +1,3 @@
-#include "lib/bblib.h"
-
 #define N 32
 #define B 8
 
@@ -288,7 +286,7 @@ static int b[N * N] = {
 
 static int c[N * N];
 
-int do_matmul()
+void do_matmul()
 {
     matmul(a, b, c);
 }

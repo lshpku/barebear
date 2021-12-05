@@ -1,4 +1,3 @@
-#include "lib/bblib.h"
 
 static void qsort(int a[], int l, int r)
 {
