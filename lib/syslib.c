@@ -25,6 +25,14 @@ uintptr_t syscall(uintptr_t which, uint64_t arg0, uint64_t arg1, uint64_t arg2)
     return magic_mem[0];
 }
 
+int puts(const char *s)
+{
+    const char *e = s;
+    while (*e++)
+        ;
+    return syscall(SYSCALL_WRITE, 1, (size_t)s, e - s);
+}
+
 void _putchar(char character)
 {
     static char b[PUT_BUFFER_SIZE];
