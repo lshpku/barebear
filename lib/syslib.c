@@ -1,6 +1,8 @@
-#include "bblib.h"
+#include "syslib.h"
 
 #define SYSCALL_WRITE 64
+
+#define PUT_BUFFER_SIZE 64
 
 extern volatile uint64_t tohost;
 extern volatile uint64_t fromhost;
@@ -23,29 +25,13 @@ uintptr_t syscall(uintptr_t which, uint64_t arg0, uint64_t arg1, uint64_t arg2)
     return magic_mem[0];
 }
 
-long unsigned int strlen(const char *s)
+void _putchar(char character)
 {
-    int size = 0;
-    while (*(s++))
-        size++;
-    return size;
-}
-
-int puts(const char *s)
-{
-    return syscall(SYSCALL_WRITE, 1, (size_t)s, strlen(s));
-}
-
-int putx(unsigned i)
-{
-    char b[8];
-    for (int j = 0; j < 8; j++) {
-        int c = (i >> (j << 2)) & 0xF;
-        if (c < 10)
-            c += '0';
-        else
-            c += 'a' - 10;
-        b[7 - j] = c;
+    static char b[PUT_BUFFER_SIZE];
+    static int i = 0;
+    b[i++] = character;
+    if (character == '\n' || i == PUT_BUFFER_SIZE) {
+        syscall(SYSCALL_WRITE, 1, (size_t)b, i);
+        i = 0;
     }
-    return syscall(SYSCALL_WRITE, 1, (uint64_t)b, sizeof(b));
 }
