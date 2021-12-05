@@ -286,7 +286,8 @@ static int b[N * N] = {
 
 static int c[N * N];
 
-void do_matmul()
+int do_matmul()
 {
     matmul(a, b, c);
+    return c[c[0] % (N * N)];
 }
