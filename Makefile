@@ -2,24 +2,23 @@
 TOOLCHAIN=riscv64-unknown-elf-
 
 CC=$(TOOLCHAIN)gcc
-CFLAGS=-march=rv64g -mabi=lp64 -mcmodel=medany -O2
-LDFLAGS=-nostdlib -nostartfiles -Tlib/link.ld -static
+CFLAGS=-march=rv64g -mabi=lp64 -mcmodel=medany -O3
+LDFLAGS=-nostdlib -nostartfiles -Tlink.ld -static
 
-SIM=/root/chipyard/sims/verilator/simulator-chipyard-MediumBoomConfig
+LIBC=$(wildcard lib/*.c)
+
+EXTRA ?=
 
 all: main
 
-main: main.S lib/bblib.c lib/crt.S
+main: main.S lib/syslib.c lib/crt.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-sim: main
-	$(SIM) $<
+%: %.c $(LIBC) lib/crt.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(EXTRA)
 
-spike: main
-	spike $<
+%.dump: %
+	$(TOOLCHAIN)objdump -D $< > $@
 
-dump: main
-	$(TOOLCHAIN)objdump -D $<
-
-elf: main
-	$(TOOLCHAIN)readelf -e $<
+%.elf: %
+	$(TOOLCHAIN)readelf -e $< > $@

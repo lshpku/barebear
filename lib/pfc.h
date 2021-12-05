@@ -95,4 +95,6 @@ inline void __set_eventset(int i)
     }
 }
 
+#define N_EVENT_COUNTERS 16
+
 #endif
