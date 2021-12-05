@@ -226,6 +226,29 @@ main:
     la  a0, 5b
     bne a0, a5, fail
 
+    # ADD that writes r31
+    li  a0, 8
+    la  a1, 1f
+    li  a2, 13
+    add x0, x0, x1
+    1: .word 0x0857c00b # add r31, a0, a1 << #0
+    .word 0x0853000c    # add a2, a0, a2 << #0
+    .word 0x0863000a    # add a2, a2, a0 << #0
+    add x0, x0, x2
+    li  a3, 21
+    bne a3, a2, fail
+
+    # ADD that reads & writes r31
+    li  a0, 8
+    li  a2, 13
+    add x0, x0, x1
+    1: .word 0x0857c01f # add r31, a0, r31 << #0
+    .word 0x0853000c    # add a2, a0, a2 << #0
+    .word 0x0863000a    # add a2, a2, a0 << #0
+    add x0, x0, x2
+    li  a3, 21
+    bne a3, a2, fail
+
 pass:
     la  a0, pass_info
     jal ra, puts
