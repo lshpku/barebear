@@ -10,7 +10,7 @@ parser.add_argument('path')
 STAGES = [
     'if0', 'if1', 'if2', 'if3', 'if4',
     'dec', 'dec.tb', 'ren.tb', 'ren.br', 'ren.ren1', 'dis.ren2', 'dis', 'iss',
-    'rrd', 'exe.in', 'exe.out', 'exe.br', 'bru.b1', 'bru.b2',
+    'rrd', 'exe.get_pc', 'exe.in', 'exe.out', 'exe.br', 'bru.b1', 'bru.b2',
     'mem', 'sxt', 'wb', 'com',
 ]
 

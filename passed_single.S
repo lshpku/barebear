@@ -249,6 +249,33 @@ main:
     li  a3, 21
     bne a3, a2, fail
 
+    j   pass
+
+    # STORE pc
+    la  a0, temp_heap
+    mv  a1, zero
+    add x0, x0, x1
+    1: .word 0x5857c00b # STW r31, [a0+], a1 << #0
+    add x0, x0, x2
+    la  a2, 1b
+    lwu a3, 0(a0)
+    bne a2, a3, fail
+
+    # STORE to [pc]
+    la  a0, temp_heap
+    la  a1, 1f
+    sub a1, a0, a1
+    add x0, x0, x1
+    1: .word 0x58fa800b # STW a0, [r31+], a1 << #0
+    2: .word 0x585fc01f # STW r31, [a1+], r31 << #0
+    add x0, x0, x2
+    lwu a1, 0(a0)
+    bne a0, a1, fail
+    lwu a1, 4(a0)
+    la  a2, 2b
+    bne a1, a2, fail
+    j   pass
+
 pass:
     la  a0, pass_info
     jal ra, puts
@@ -264,3 +291,7 @@ fail:
 .section .data;
 pass_info: .string "passed\n"
 fail_info: .string "failed\n"
+
+.section .bss;
+.align 8
+temp_heap: .word 0, 0, 0, 0
