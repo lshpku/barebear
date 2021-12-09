@@ -1,0 +1,106 @@
+#!/usr/bin/python3
+import argparse
+import re
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-o', help='output file')
+parser.add_argument('path', help='input file')
+
+MACRO_PATTERN = re.compile(r'[A-Za-z_]\w*\s*\(\s*\w+(\s*,\s*\w+)*\s*\)')
+
+
+class Define:
+
+    def __init__(self, *args):
+        self._placeholders = []  # (val, wid)
+
+        width = 0
+        for arg in args:
+            val, wid = arg.split('.')
+            wid = int(wid)
+            try:
+                val = int(val, 0)
+            except ValueError:
+                assert val[0] == '$'
+                int(val[1:])
+            width += wid
+            self._placeholders.append((val, wid))
+        assert width == 32
+
+    def expand(self, *args) -> str:
+        offset = 32
+        data = 0
+        for val, wid in self._placeholders:
+            offset -= wid
+            if isinstance(val, str):
+                val = args[int(val[1:])].strip()
+                try:
+                    val = int(val, 0)
+                except ValueError:
+                    val = Define.alias(val)
+            data |= (val & ((1 << wid) - 1)) << offset
+        return hex(data)
+
+    @staticmethod
+    def alias(s):
+        if s[0] == 'x':
+            return int(s[1:])
+        if s[0] == 'a':
+            return 10 + int(s[1:])
+        raise ValueError("unknown alias: '%s'" % s)
+
+
+class UniMacro:
+
+    ADD = Define('0x08.8', '$1.5', '$0.5', '0.5', '0.4', '$2.5')
+
+    B = Define('0xbc.8', '$0.24')
+    B_L = Define('0xbd.8', '$0.24')
+
+    BEQ = Define('0x5.3', '0.4', '0.1', '$0.24')
+    BEQ_L = Define('0x5.3', '0.4', '1.1', '$0.24')
+
+    JUMP = Define('0x10.8', '31.5', '31.5', '0.5', '9.4', '$0.5')
+    JUMP_L = Define('0x11.8', '31.5', '31.5', '0.5', '9.4', '$0.5')
+
+    STW = Define('0x58.8', '$1.5', '$0.5', '$3.5', '0.4', '$2.5')
+    LDW = Define('0x59.8', '$1.5', '$0.5', '$3.5', '0.4', '$2.5')
+
+    @staticmethod
+    def expand(text: str) -> str:
+        key = text[:text.index('(')].strip()
+        args = text[text.index('(') + 1:text.index(')')].split(',')
+
+        macro = getattr(UniMacro, key, None)
+        if not isinstance(macro, Define):
+            return text
+        text = macro.expand(*args)
+
+        sub_text = '%s(%s)' % (key, ', '.join(i.strip() for i in args))
+
+        return '.word %s # %s' % (text, sub_text)
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+
+    with open(args.path) as f:
+        text = f.read()
+
+    out = []
+    last_pos = 0
+
+    for match in MACRO_PATTERN.finditer(text):
+        start, end = match.span()
+        out.append(text[last_pos:start])
+        out.append(UniMacro.expand(text[start:end]))
+        last_pos = end
+
+    out.append(text[last_pos:])
+    out = ''.join(out)
+
+    if args.o:
+        with open(args.o, 'w') as f:
+            f.write(out)
+    else:
+        print(out)
