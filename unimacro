@@ -33,13 +33,17 @@ class Define:
         for val, wid in self._placeholders:
             offset -= wid
             if isinstance(val, str):
-                val = args[int(val[1:])].strip()
+                try:
+                    val = args[int(val[1:])].strip()
+                except IndexError:
+                    val = 0
+            if isinstance(val, str):
                 try:
                     val = int(val, 0)
                 except ValueError:
                     val = Define.alias(val)
             data |= (val & ((1 << wid) - 1)) << offset
-        return hex(data)
+        return '0x%08x' % data
 
     @staticmethod
     def alias(s):
