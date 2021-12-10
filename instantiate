@@ -1,0 +1,50 @@
+#!/usr/bin/python3
+
+import argparse
+from string import Template
+
+MAIN = Template('''#include "lib/syslib.h"
+#include "lib/printf.h"
+
+${defines}
+
+int main()
+{
+    int res;
+${uses}
+
+    return 0;
+}
+''')
+
+DEFINE = Template('int __${name}();')
+
+USE = Template('''
+    res = __${name}();
+    if (res) {
+        printf("failed in ${path}: %d\\n", res);
+        return -1;
+    }''')
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-o', help='output file')
+parser.add_argument('case', nargs='*', help='test case')
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    cases = []
+    for path in args.case:
+        name = path.replace('/', '_').replace('.', '_')
+        cases.append((path, name))
+
+    defines = '\n'.join(DEFINE.substitute(name=n) for _, n in cases)
+    uses = '\n'.join(USE.substitute(name=n, path=p) for p, n in cases)
+    text = MAIN.substitute(defines=defines, uses=uses)
+
+    if args.o:
+        with open(args.o, 'w') as f:
+            f.write(text)
+    else:
+        print(text)

@@ -2,20 +2,39 @@
 TOOLCHAIN=riscv64-unknown-elf-
 
 CC=$(TOOLCHAIN)gcc
-CFLAGS=-march=rv64g -mabi=lp64 -mcmodel=medany -O3
+CFLAGS=-march=rv64g -mabi=lp64d -mcmodel=medany -I. -O3
 LDFLAGS=-nostdlib -nostartfiles -Tlink.ld -static
 
 LIBC=$(wildcard lib/*.c)
+SRCS=$(wildcard src/*.S)
+LIBO=$(addprefix build/, $(LIBC:c=o))
+SRCO=$(addprefix build/, $(SRCS:S=o))
 
-EXTRA ?=
+all: build | build/main
 
-all: main
+build:
+	mkdir -p build build/src build/lib
 
-main: main.S lib/syslib.c lib/crt.S
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+build/lib/%.o: lib/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-%: %.c $(LIBC) lib/crt.S
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(EXTRA)
+build/src/%.S: src/%.S
+	./unimacro -o $@ $<
+
+build/src/%.o: build/src/%.S
+	$(CC) $(CFLAGS) -DCASENAME=$(subst /,_,$(subst .,_,$(<:build/%=%))) -c -o $@ $<
+
+build/%.o: build/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+build/main.c:
+	./instantiate src/*.S -o build/main.c
+
+build/main: build/main.o $(LIBO) $(SRCO) lib/crt.S
+	$(CC) $(LDFLAGS) -o $@ $^
+
+clean:
+	rm -rf build
 
 %.dump: %
 	$(TOOLCHAIN)objdump -D $< > $@
