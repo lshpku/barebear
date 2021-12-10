@@ -4,6 +4,7 @@ TOOLCHAIN=riscv64-unknown-elf-
 CC=$(TOOLCHAIN)gcc
 CFLAGS=-march=rv64g -mabi=lp64d -mcmodel=medany -I. -O3
 LDFLAGS=-nostdlib -nostartfiles -Tlink.ld -static
+CDEFS=-DPRINTF_DISABLE_SUPPORT_FLOAT
 
 LIBC=$(wildcard lib/*.c)
 SRCS=$(wildcard src/*.S)
@@ -13,10 +14,11 @@ SRCO=$(addprefix build/, $(SRCS:S=o))
 all: build | build/main
 
 build:
+	echo $(CDEFS)
 	mkdir -p build build/src build/lib
 
 build/lib/%.o: lib/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(CDEFS) -c -o $@ $<
 
 build/src/%.S: src/%.S
 	./unimacro -o $@ $<

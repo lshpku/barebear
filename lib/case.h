@@ -17,7 +17,7 @@
         li  a0, 0;          \
         j   __end;          \
     __fail:                 \
-        li  a0, 1;          \
+        mv  a0, t6;         \
     __end:                  \
         addi    sp, sp, 32; \
         ret;
@@ -28,5 +28,6 @@
 #define EXIT_UNICORE() \
     add x0, x0, x2;
 
-#define MATCH(rs1, rs2) \
+#define MATCH(rs1, rs2)   \
+    li  t6, __LINE__;     \
     bne rs1, rs2, __fail;
