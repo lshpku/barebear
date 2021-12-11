@@ -7,14 +7,13 @@ LDFLAGS=-nostdlib -nostartfiles -Tlink.ld -static
 CDEFS=-DPRINTF_DISABLE_SUPPORT_FLOAT
 
 LIBC=$(wildcard lib/*.c)
-SRCS=$(wildcard src/*.S)
+SRCS?=$(wildcard src/*.S)
 LIBO=$(addprefix build/, $(LIBC:c=o))
 SRCO=$(addprefix build/, $(SRCS:S=o))
 
 all: build | build/main
 
 build:
-	echo $(CDEFS)
 	mkdir -p build build/src build/lib
 
 build/lib/%.o: lib/%.c
@@ -30,7 +29,7 @@ build/%.o: build/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 build/main.c:
-	./instantiate src/*.S -o build/main.c
+	./instantiate $(SRCS) -o build/main.c
 
 build/main: build/main.o $(LIBO) $(SRCO) lib/crt.S
 	$(CC) $(LDFLAGS) -o $@ $^
