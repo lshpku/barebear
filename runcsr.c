@@ -30,6 +30,15 @@ void snapshot_hpm(uint64_t b[16])
     b[15] = __csrr_hpmcounter16();
 }
 
+void print(FILE *file, time_t sec, long usec, uint64_t b[16])
+{
+    fprintf(file, "{\"time\":%ld.%06ld", sec, usec);
+    fprintf(file, ",\"hpms\":[%llu", b[0]);
+    for (int i = 1; i < 16; i++)
+        fprintf(file, ",%llu", b[i]);
+    fprintf(file, "]}\n");
+}
+
 void sigalrm_handler(int signo)
 {
     clock_gettime(CLOCK_REALTIME, &time2);
@@ -42,24 +51,8 @@ void sigalrm_handler(int signo)
 
     uint64_t b[16];
     snapshot_hpm(b);
-    printf("{\"time\":%ld.%06ld,", sec, usec);
-    printf("\"cycle\":%llu,", b[0]);
-    printf("\"instret\":%llu,", b[1]);
-    printf("\"br\":%llu,", b[2]);
-    printf("\"br_misp\":%llu,", b[5]);
-    printf("\"jalr\":%llu,", b[3]);
-    printf("\"jalr_misp\":%llu,", b[6]);
-    printf("\"ret\":%llu,", b[4]);
-    printf("\"ret_misp\":%llu,", b[7]);
-    printf("\"jalr_nret_btb_hit\":%llu,", b[8]);
-    printf("\"jalr_nret_btb_misp\":%llu,", b[9]);
-    printf("\"br_bim_misp\":%llu,", b[11]);
-    printf("\"br_tage_hit\":%llu,", b[12]);
-    printf("\"br_tage_misp\":%llu,", b[13]);
-    printf("\"br_loop_hit\":%llu,", b[10]);
-    printf("\"br_loop_flip\":%llu,", b[14]);
-    printf("\"br_loop_flip_misp\":%llu", b[15]);
-    printf("}\n");
+    print(stdout, sec, usec, b);
+    print(stderr, sec, usec, b);
 
     if (signo == SIGALRM)
         alarm(60);
