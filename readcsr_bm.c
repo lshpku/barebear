@@ -2,7 +2,7 @@
 #include "lib/csr.h"
 #include "lib/printf.h"
 
-void snapshot_hpm(uint64_t b[N_HPM])
+void snapshot_hpm(uint64_t b[16])
 {
     b[0] = __csrr_cycle();
     b[1] = __csrr_instret();
@@ -23,7 +23,7 @@ void snapshot_hpm(uint64_t b[N_HPM])
     b[15] = __csrr_hpmcounter16();
 }
 
-void print_hpm(const uint64_t b1[N_HPM], const uint64_t b2[N_HPM])
+void print_hpm(const uint64_t b1[16], const uint64_t b2[16])
 {
     printf("{\n");
     printf("  \"cycle\"    : %d,\n", b2[0] - b1[0]);
@@ -48,28 +48,22 @@ void print_hpm(const uint64_t b1[N_HPM], const uint64_t b2[N_HPM])
 int do_qsort();
 int do_matmul();
 int do_switch();
+int do_fordfulk();
+
+#define DO(f)                  \
+    snapshot_hpm(b1);          \
+    do_##f();                  \
+    snapshot_hpm(b2);          \
+    printf("\"do_" #f "\": "); \
+    print_hpm(b1, b2);
 
 int main()
 {
-    uint64_t b1[N_HPM], b2[N_HPM];
+    uint64_t b1[16], b2[16];
 
     printf("begin\n");
-
-    snapshot_hpm(b1);
-    do_qsort();
-    snapshot_hpm(b2);
-    printf("\"do_qsort\": ");
-    print_hpm(b1, b2);
-
-    snapshot_hpm(b1);
-    do_matmul();
-    snapshot_hpm(b2);
-    printf("\"do_matmul\": ");
-    print_hpm(b1, b2);
-
-    snapshot_hpm(b1);
-    do_switch();
-    snapshot_hpm(b2);
-    printf("\"do_switch\": ");
-    print_hpm(b1, b2);
+    DO(qsort);
+    DO(matmul);
+    DO(switch);
+    DO(fordfulk);
 }
