@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import struct
 import argparse
 import hashlib
@@ -164,6 +165,8 @@ __unicore_text:
     .global __unicore_data
 __unicore_data:
 {data}
+__unicore_rodata:
+{rodata}
 {bss}'''
 
 if __name__ == '__main__':
@@ -183,20 +186,22 @@ if __name__ == '__main__':
     shstrtab = StrTab(content[begin:end])
 
     # parse sections
-    text, data, bss = [], [], ''
+    text, data, rodata, bss = [], [], [], ''
     symtab = []
     rel_text = []
 
     for h in section_headers:
         name = shstrtab[h.sh_name]
-        if name in {'.text', '.data'}:
+        if name in {'.text', '.data', '.rodata'}:
             begin, end = h.get_bound()
             for i in range(begin, end, 4):
                 s = '    .word 0x%08x' % struct.unpack('I', content[i:i + 4])
                 if name == '.text':
                     text.append(s)
-                else:
+                elif name == '.data':
                     data.append(s)
+                else:
+                    rodata.append(s)
         elif name == '.bss':
             bss = ('    .local  __unicore_bss\n'
                    '    .comm   __unicore_bss, %d, %d\n') % (h.sh_size, h.sh_addralign)
@@ -233,9 +238,10 @@ if __name__ == '__main__':
     text.insert(entrypoint.st_value // 4, '__entrypoint:')
     text = '\n'.join(text)
     data = '\n'.join(data)
-    asm = ASM_FORMAT.format(text=text, data=data, bss=bss)
+    rodata = '\n'.join(rodata)
+    asm = ASM_FORMAT.format(text=text, data=data, rodata=rodata, bss=bss)
     uidb = hashlib.sha256(asm.encode('utf-8')).digest()[:6]
-    uids = base64.b64encode(uidb).decode('utf-8').replace('+', '-').replace('/', '_')
+    uids = base64.b64encode(uidb).decode('utf-8').replace('+', '_').replace('/', '_')
     asm_path = uids + '.s'
     with open(asm_path, 'w') as f:
         f.write(asm)
@@ -279,10 +285,6 @@ if __name__ == '__main__':
         name = shstrtab[h.sh_name]
         if name == '.text':
             text = h
-        elif name == '.data':
-            data = h
-        elif name == '.bss':
-            bss = h
         elif name == '.symtab':
             begin, end = h.get_bound()
             for i in range(begin, end, SymTabEntry64.size):
@@ -297,6 +299,8 @@ if __name__ == '__main__':
             text_uc = e.st_value
         elif name == '__unicore_data':
             data_uc = e.st_value
+        elif name == '__unicore_rodata':
+            rodata_uc = e.st_value
         elif name == '__unicore_bss':
             bss_uc = e.st_value
 
@@ -314,6 +318,8 @@ if __name__ == '__main__':
             v += text_uc
         elif sh_name == '.data':
             v += data_uc
+        elif sh_name == '.rodata':
+            v += rodata_uc
         elif sh_name == '.bss':
             v += bss_uc
         else:
