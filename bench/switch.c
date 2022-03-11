@@ -29,3 +29,11 @@ int do_switch()
 {
     return sw(4, 12);
 }
+
+#ifdef WITH_MAIN
+#include <stdio.h>
+int main()
+{
+    printf("code = %d\n", do_switch());
+}
+#endif
