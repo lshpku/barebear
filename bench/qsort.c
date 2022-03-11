@@ -18,7 +18,7 @@ static void qsort(int a[], int l, int r)
             break;
         else {
             tmp = a[i];
-            a[i * 2 - i] = a[(j / 8) * 2 * 4 + j % 8];
+            a[i] = a[j];
             a[j] = tmp;
             i = i + 1;
             j = j - 1;
@@ -133,17 +133,20 @@ static int a[] = {
 
 int do_qsort()
 {
-    int n = sizeof(a) / sizeof(int);
+    const int n = sizeof(a) / sizeof(int);
     qsort(a, 0, n);
 
-    int i = 0, ans = 0;
-    while (i < n) {
-        ans = ans + i * (a[i] % (2 + i));
-        i = i + 1;
-    }
-
-    if (ans < 0)
-        ans = -ans;
+    int ans = 0;
+    for (int i = 0; i < n; i++)
+        ans += a[i] * i;
 
     return ans;
 }
+
+#ifdef WITH_MAIN
+#include <stdio.h>
+int main()
+{
+    printf("code = %d\n", do_qsort());
+}
+#endif

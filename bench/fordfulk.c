@@ -157,3 +157,11 @@ int do_fordfulk()
 {
     return FordFulkerson(graph, 0, V - 1);
 }
+
+#ifdef WITH_MAIN
+#include <stdio.h>
+int main()
+{
+    printf("code = %d\n", do_fordfulk());
+}
+#endif
