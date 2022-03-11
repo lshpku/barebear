@@ -148,6 +148,7 @@ main:
     la  a0, main_stack
     sd  sp, 0(a0)
     sd  ra, 8(a0)
+    mv  x29, sp
     la  a0, __entrypoint
     add x0, x0, x1      # enter unicore
     .word   0x11ffc12a  # jump.l a0

@@ -25,10 +25,10 @@ A Baremetal Test Framework for RISC-V
   ```bash
   $ unicore32-linux-gcc -std=c99 -O1 -c bench/bubble.c -o bubble.o
   ```
-* 检查是否有`ldm`或`stm`指令；若有则无法执行，请修改代码或编译选项 
-（通常编译器会在`-O0`，或函数比较大，或有连续地址的访存时生成`ldm`和`stm`）
+* 确认无库函数和运行时调用
   ```bash
-  $ unicore32-linux-objdump -D bubble.o | grep -E 'ldm|stm'
+  $ unicore32-linux-objdump -D bubble.o  # 检查反汇编代码
+  $ unicore32-linux-readelf -r bubble.o  # 检查重定位表
   ```
 
 #### 链接RISC-V程序
