@@ -13,6 +13,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('path', help='path to the input UniCore32 relocatable (.o)')
 parser.add_argument('-e', '--entrypoint', help='name of the entry function')
 parser.add_argument('-o', '--output', default='a.out', help='path to the output RISC-V executable')
+parser.add_argument('--cycle', action='store_true', help='return the cycle count')
+parser.add_argument('--instret', action='store_true', help='return the instret count')
+parser.add_argument('--warmup', type=int, default=0, help='number of warmups before execution')
 
 
 class ELFHeader:
@@ -148,12 +151,7 @@ main:
     la  a0, main_stack
     sd  sp, 0(a0)
     sd  ra, 8(a0)
-    mv  x29, sp
-    la  a0, __entrypoint
-    add x0, x0, x1      # enter unicore
-    .word   0x11ffc12a  # jump.l a0
-    .word   0x1a028000  # mov a0, r0
-    add x0, x0, x2      # exit unicore
+    mv  x29, sp{core}
     la  sp, main_stack
     ld  ra, 8(sp)
     ld  sp, 0(sp)
@@ -170,6 +168,22 @@ __unicore_data:
 __unicore_rodata:
 {rodata}
 {bss}'''
+
+WARMUP = '''
+    la  a0, __entrypoint
+    add x0, x0, x1      # enter unicore
+    .word   0x11ffc12a  # jump.l a0
+    add x0, x0, x2      # exit unicore''' * 3
+
+VALIDATION = '''
+    la  a0, __entrypoint
+    add x0, x0, x1      # enter unicore
+    .word   0x11ffc12a  # jump.l a0
+    .word   0x1a028000  # mov a0, r0
+    add x0, x0, x2      # exit unicore'''
+
+CSRW = '\n    csrw m%s, zero'
+CSRR = '\n    csrr a0, m%s'
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -237,11 +251,22 @@ if __name__ == '__main__':
     assert shstrtab[section_headers[entrypoint.st_shndx].sh_name] == '.text'
 
     # format assembly
+    if args.cycle and args.instret:
+        raise ValueError("Cannot specify both --cycle and --instret")
+    warmup = WARMUP * args.warmup
+    if args.cycle:
+        core = warmup + (CSRW % 'cycle') + VALIDATION + (CSRR % 'cycle')
+    elif args.instret:
+        core = warmup + (CSRW % 'instret') + VALIDATION + (CSRR % 'instret')
+    else:
+        core = warmup + VALIDATION
+
     text.insert(entrypoint.st_value // 4, '__entrypoint:')
     text = '\n'.join(text)
     data = '\n'.join(data)
     rodata = '\n'.join(rodata)
-    asm = ASM_FORMAT.format(text=text, data=data, rodata=rodata, bss=bss)
+
+    asm = ASM_FORMAT.format(core=core, text=text, data=data, rodata=rodata, bss=bss)
     uidb = hashlib.sha256(asm.encode('utf-8')).digest()[:6]
     uids = base64.b64encode(uidb).decode('utf-8').replace('+', '_').replace('/', '_')
     asm_path = uids + '.s'

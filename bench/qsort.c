@@ -16,13 +16,11 @@ static void qsort(int a[], int l, int r)
             j = j - 1;
         if (i >= j)
             break;
-        else {
-            tmp = a[i];
-            a[i] = a[j];
-            a[j] = tmp;
-            i = i + 1;
-            j = j - 1;
-        }
+        tmp = a[i];
+        a[i] = a[j];
+        a[j] = tmp;
+        i = i + 1;
+        j = j - 1;
     }
 
     qsort(a, l, i);
@@ -131,14 +129,21 @@ static int a[] = {
     103782025, 1002585601, -249929977, 645621376, 1419749394, 1124631429, 1448410631, -185711082, -164453336, -568767238,
     -2138955017, 804388318, 479603858, 916552009, -1900445285, -1268219631, 2062432575, -1069687058, -1531115906, -464526672};
 
+#define N (sizeof(a) / sizeof(a[0]))
+
+static int b[N];
+
+void set_array(int i, int n) { a[i] = n; }
+
 int do_qsort()
 {
-    const int n = sizeof(a) / sizeof(int);
-    qsort(a, 0, n);
+    int ans;
+    for (int i = 0; i < N; i++) {
+        ans += b[i] * i;
+        b[i] = a[i];
+    }
 
-    int ans = 0;
-    for (int i = 0; i < n; i++)
-        ans += a[i] * i;
+    qsort(b, 0, N);
 
     return ans;
 }
@@ -147,6 +152,7 @@ int do_qsort()
 #include <stdio.h>
 int main()
 {
-    printf("code = %d\n", do_qsort());
+    do_qsort();
+    printf("code = %d\n", do_qsort() & 0x7fffffff);
 }
 #endif

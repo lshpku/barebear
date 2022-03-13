@@ -1,11 +1,11 @@
 #define N 32
 #define B 8
 
-static inline void matmul_block(int *a, int *b, int *c)
+static inline void matmul_block(int *a, int *b, int *c, int sk)
 {
     for (int i = 0; i < B; i++) {
         for (int j = 0; j < B; j++) {
-            int cij = c[i * N + j];
+            int cij = sk == 0 ? 0 : c[i * N + j];
             for (int k = 0; k < B; k++)
                 cij += a[i * N + k] * b[k * N + j];
             c[i * N + j] = cij;
@@ -18,7 +18,7 @@ static inline void matmul(int *a, int *b, int *c)
     for (int sj = 0; sj < N; sj += B) {
         for (int si = 0; si < N; si += B) {
             for (int sk = 0; sk < N; sk += B) {
-                matmul_block(a + si * N + sk, b + sk * N + sj, c + si * N + sj);
+                matmul_block(a + si * N + sk, b + sk * N + sj, c + si * N + sj, sk);
             }
         }
     }
