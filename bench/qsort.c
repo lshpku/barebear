@@ -137,7 +137,7 @@ void set_array(int i, int n) { a[i] = n; }
 
 int do_qsort()
 {
-    int ans;
+    int ans = 0;
     for (int i = 0; i < N; i++) {
         ans += b[i] * i;
         b[i] = a[i];

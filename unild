@@ -16,12 +16,18 @@ parser.add_argument('-e', '--entrypoint', help='name of the entry function')
 parser.add_argument('-o', '--output', default='a.out', help='path to the output RISC-V executable')
 parser.add_argument('--hpm-counter', help='monitor on this counter')
 parser.add_argument('--warmup', type=int, default=0, help='number of warmups before execution')
+parser.add_argument('-v', '--verbose', action='store_true', help='print debugging logs')
 
 
 def panic(fmt: str, *args):
     sys.stderr.write(sys.argv[0] + ': ' + fmt % args + '\n')
     sys.stderr.flush()
     exit(1)
+
+
+def debug(fmt: str, *sargs):
+    if args.verbose:
+        print('debug: ' + fmt % sargs)
 
 
 class ELFHeader:
@@ -183,7 +189,8 @@ class UniCore32ELF:
         self.rel_tables = {}
         for h in self.section_headers:
             name = self.shstrtab[h.sh_name]
-            if name in {'.text', '.data'} or name.startswith('.rodata'):
+            if any(name.startswith(s)
+                   for s in {'.text', '.data', '.rodata', '.bss'}):
                 self.rel_sections[name] = h
             elif name.startswith('.rel'):
                 sh_name = name[len('.rel'):]
@@ -254,7 +261,12 @@ class UniCore32ELF:
         code('    ret')
 
         for name, h in self.rel_sections.items():
-            if name == '.text':
+            debug("Accept section '%s'", name)
+            if name.startswith('.bss'):
+                code('    .local  unicore32%s' % name)
+                code('    .comm   unicore32%s, %d, %d' % (name, h.sh_size, h.sh_addralign))
+                continue
+            if name.startswith('.text'):
                 code('    .text')
             else:
                 code('    .data')
@@ -265,11 +277,6 @@ class UniCore32ELF:
                 if name == '.text' and i - begin == self.entrypoint.st_value:
                     code('unicore32.entrypoint:')
                 code('    .word 0x%08x' % struct.unpack('I', content[i:i + 4]))
-
-        bss = self.section_header_table.get('.bss')
-        if bss is not None:
-            code('    .local  unicore32.bss')
-            code('    .comm   unicore32.bss, %d, %d' % (bss.sh_size, bss.sh_addralign))
 
         code('')
         return '\n'.join(codes)
@@ -329,7 +336,7 @@ if __name__ == '__main__':
     uc32_elf = UniCore32ELF(content)
     uc32_elf.set_entrypoint(args.entrypoint)
 
-    asm = uc32_elf.format_asm()
+    asm = uc32_elf.format_asm(args.warmup, args.hpm_counter)
     asm_hash = hashlib.sha256(asm.encode('utf-8')).digest()
     asm_uid = base64.b64encode(asm_hash[:6], b'01').decode('utf-8')
     asm_path = asm_uid + '.s'
@@ -356,8 +363,8 @@ if __name__ == '__main__':
 
     # relocate
     out = io.BytesIO(content)
-    for sec_name, rel_table in uc32_elf.rel_tables.items():
-        from_sec_vaddr = rv64_exe.symtab_table['unicore32' + sec_name].st_value
+    for rel_name, rel_table in uc32_elf.rel_tables.items():
+        from_sec_vaddr = rv64_exe.symtab_table['unicore32' + rel_name].st_value
         from_sec_offset = rv64_exe.get_offset(from_sec_vaddr)
 
         for e in rel_table:
@@ -376,6 +383,8 @@ if __name__ == '__main__':
                 pc_offset = ((to_vaddr - from_vaddr - 4) >> 2) & 0xffffff
                 out.seek(from_offset)
                 out.write(pc_offset.to_bytes(3, 'little'))
+                debug('Relocate PC24 0x%08x (%s+0x%x) to 0x%08x (%s+0x%x)',
+                      from_offset, rel_name, e.r_offset, to_vaddr, sec_name, sym.st_value)
 
             elif e.r_type == RelEntry.R_UNICORE32_ABS32:
                 from_offset = from_sec_offset + e.r_offset
@@ -384,6 +393,8 @@ if __name__ == '__main__':
                 to_vaddr = to_sym.st_value + offset
                 out.seek(from_offset)
                 out.write(to_vaddr.to_bytes(4, 'little'))
+                debug('Relocate ABS32 0x%08x (%s+0x%x) to 0x%08x (%s+0x%x)',
+                      from_offset, rel_name, e.r_offset, to_vaddr, sec_name, offset)
 
             else:
                 panic("Unknown relocation type: %d", e.r_type)
