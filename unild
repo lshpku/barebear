@@ -207,7 +207,7 @@ class UniCore32ELF:
                     self.entrypoint = e
                     break
             if self.entrypoint is None:
-                panic("No matching entrypoint named '%s'.", name)
+                panic("No matching entrypoint named '%s'", name)
         else:
             for e in self.symtab:
                 if e.is_global_func():
@@ -217,7 +217,7 @@ class UniCore32ELF:
                         panic('Cannot decide entrypoint automatically. '
                               'Please specify it by hand')
             if self.entrypoint is None:
-                panic("Cannot find any entrypoint in '%s'.", args.path)
+                panic("Cannot find any entrypoint in '%s'", args.path)
 
         h = self.section_headers[self.entrypoint.st_shndx]
         if self.shstrtab[h.sh_name] != '.text':
@@ -370,7 +370,11 @@ if __name__ == '__main__':
         for e in rel_table:
             sym = uc32_elf.symtab[e.r_sym]
             name = uc32_elf.strtab[sym.st_name]
-            sec_name = uc32_elf.shstrtab[uc32_elf.section_headers[sym.st_shndx].sh_name]
+            try:
+                sec = uc32_elf.section_headers[sym.st_shndx]
+            except IndexError:
+                panic("Symbol '%s' doesn't belong to any section. Try make it static", name)
+            sec_name = uc32_elf.shstrtab[sec.sh_name]
             to_sym = rv64_exe.symtab_table.get('unicore32' + sec_name)
             if to_sym is None:
                 panic("Cannot relocate symbol '%s' in section '%s'", name, sec_name)
