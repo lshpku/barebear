@@ -110,11 +110,12 @@ A Baremetal Test Framework for RISC-V
   * 注：若你的benchmark中有浮点运算，请务必使用该选项
 * 禁用浮点
   ```bash
-  $ riscv64-unknown-elf-gcc -march=rv64g -mabi=lp64d -mcmodel=medany \
+  $ riscv64-unknown-elf-gcc -march=rv64g -mabi=lp64 -mcmodel=medany \
       -I. -O3 -nostdlib -nostartfiles -Tlink.ld \
       -DPRINTF_DISABLE_SUPPORT_FLOAT -DBAREBEAR_DISABLE_FS \
       -o readcsr_bm readcsr_bm.c bench/*.c lib/crt.S lib/*.c
   ```
+* 关于`-march`和`-mabi`设置的更多细节请见[SiFive Blog](https://www.sifive.com/blog/all-aboard-part-1-compiler-args)
 
 #### 运行
 ```bash
@@ -153,9 +154,10 @@ $ <boom_home>/simulator-MediumBoomConfig <barebear>/readcsr_bm
   ```
 
 #### 编译
-```bash
-$ riscv64-unknown-linux-gnu-gcc -O3 -o runcsr runcsr.c
-```
+* 直接编译即可，FPGA上已经有库，无需开`-static`
+  ```bash
+  $ riscv64-unknown-linux-gnu-gcc -O3 -o runcsr runcsr.c
+  ```
 
 #### 运行
 * 直接运行，但若benchmark有输出会与`runcsr`的输出混在一起
