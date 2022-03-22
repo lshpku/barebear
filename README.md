@@ -98,6 +98,7 @@ A Baremetal Test Framework for RISC-V
 #### 准备Benchmark和CSR
 * 参考`readcsr_bm.c`中的调用方式和`bench/`中的小程序准备你的benchmark
 * 注：你只能读已经定义的CSR，否则会发生异常，即你需要将多余的`__csrr_hpmcounter`指令注释掉
+* 下面以`bench/`中已有的benchmark为例
 
 #### 编译
 * 开启浮点
@@ -168,8 +169,8 @@ $ riscv64-unknown-linux-gnu-gcc -O3 -o runcsr runcsr.c
   ```
 
 #### 关于输出
-* `runcsr`每隔60秒输出一次，输出格式为JSON，一次一行（以`\n`为界）
-* 一段示例输出如下所示
+* `runcsr`每隔约60秒输出一次，在程序结束时也会输出一次
+* 输出格式为JSON，一次一行（以`\n`为界），如下所示
   ```bash
   {"time":0.000020,"hpms":[64853,31771,83,59619,40856,19351,48972,5240,58258,23336,9135,63827,29214,38282,56573,45491]}
   {"time":60.038576,"hpms":[64968,31879,106,59635,40982,19356,49041,5374,58339,23412,9371,64006,29383,38436,56781,45605]}
@@ -177,8 +178,17 @@ $ riscv64-unknown-linux-gnu-gcc -O3 -o runcsr runcsr.c
   ...
   ```
   * `time`：从runcsr启动开始的时间，秒
-  * `hpms`：性能计数器的值，具体顺序请在`runcsr.c`中自行设置；和前面一样，请务必只读已经定义的CSR
-* 为了防止terminal断开导致结果消失，但又希望在terminal上及时看到结果，`runcsr`会同时将结果同时输出到`stdout`和`stderr`，你应该将其中一个重定向到log文件，否则会看到两行一样的输出
+  * `hpms`：性能计数器的值，具体内容请在`runcsr.c`中自行设置；我们需要的即是每两次之间的差值
+  * 注：请务必只读已经定义的CSR，否则会发生异常
+* 为了在terminal上及时看到结果，但又为了防止terminal断开导致结果消失，`runcsr`会将结果同时输出到`stdout`和`stderr`，你应该将其中一个重定向到备份文件
 
 ### 可视化
-
+* 代码仅供测试，建议看懂`graphcsr.py`后根据自己的需求写一份
+* 需安装Python3和`matplotlib`
+* 运行如下指令，会在命令行输出总结，同时得到`output-{BrMispRate,BrMPKI,IPC}.png`三张图
+  ```bash
+  $ python3 graphcsr.py -g output.log
+  # IPC: 0.7830317206800169
+  # Br Misp Rate: 0.0454508694335663
+  # Br MPKI: 2.623381393198754
+  ```
