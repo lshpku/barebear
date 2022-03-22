@@ -3,6 +3,10 @@
 	.section	.text.init
 	.global	_start
 _start:
+#ifndef BAREBEAR_DISABLE_FS
+	li	a0, 0x6000	# FS = 0x11
+	csrs	mstatus, a0
+#endif
 	la	sp, stack_top
 	jal	main
 	j	exit

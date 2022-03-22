@@ -89,3 +89,96 @@ A Baremetal Test Framework for RISC-V
   # debug: Relocate ABS32 0x0000316c (.text+0x12c) to 0x80003000 (.data+0x0)
   ```
 * Uni-ld不保证支持所有的重定位方式，你可以从这里发现问题，完善和扩展Uni-ld
+
+## ReadCSR-BM
+在baremetal模式下读RISC-V CSR寄存器
+
+### 使用方法
+
+#### 准备Benchmark和CSR
+* 参考`readcsr_bm.c`中的调用方式和`bench/`中的小程序准备你的benchmark
+* 注：你只能读已经定义的CSR，否则会发生异常，即你需要将多余的`__csrr_hpmcounter`指令注释掉
+
+#### 编译
+* 开启浮点
+  ```bash
+  $ riscv64-unknown-elf-gcc -march=rv64g -mabi=lp64d -mcmodel=medany \
+      -I. -O3 -nostdlib -nostartfiles -Tlink.ld \
+      -o readcsr_bm readcsr_bm.c bench/*.c lib/crt.S lib/*.c
+  ```
+  * 注：若你的benchmark中有浮点运算，请务必使用该选项
+* 禁用浮点
+  ```bash
+  $ riscv64-unknown-elf-gcc -march=rv64g -mabi=lp64d -mcmodel=medany \
+      -I. -O3 -nostdlib -nostartfiles -Tlink.ld \
+      -DPRINTF_DISABLE_SUPPORT_FLOAT -DBAREBEAR_DISABLE_FS \
+      -o readcsr_bm readcsr_bm.c bench/*.c lib/crt.S lib/*.c
+  ```
+
+#### 运行
+```bash
+$ <boom_home>/simulator-MediumBoomConfig <barebear>/readcsr_bm
+# This emulator compiled with JTAG Remote Bitbang client. To enable, use +jtag_rbb_enable=1.
+# Listening on port 38551
+# [UART] UART0 is here (stdin/stdout).
+# begin
+# "do_qsort": {
+#   "cycle"    : 167355,
+#   "instret"  : 126630,
+# ...
+#   "br_loop_flip"      : 53,
+#   "br_loop_flip_misp" : 24
+# }
+# "do_matmul": {
+#   "cycle"    : 106092,
+#   "instret"  : 183146,
+# ...
+#   "br_loop_flip"      : 50,
+#   "br_loop_flip_misp" : 0
+# }
+# ...
+```
+
+## RunCSR
+在Linux环境下定时读RISC-V CSR寄存器
+
+### 使用方法
+
+#### 准备Benchmark
+* 自行准备一个可以运行的程序，这里以`gcc_base.rv64`为例
+* 如果要确认程序的正确性，请先单独运行该程序；套上`runcsr`后它的输出和返回值将难以获取
+  ```bash
+  $ ./gcc_base.rv64 166.i -o 166.s
+  ```
+
+#### 编译
+```bash
+$ riscv64-unknown-linux-gnu-gcc -O3 -o runcsr runcsr.c
+```
+
+#### 运行
+* 直接运行，但若benchmark有输出会与`runcsr`的输出混在一起
+  ```bash
+  $ ./runcsr ./gcc_base.rv64 166.i -o 166.s 2>output.log
+  ```
+  * 注：若`gcc_base.rv64`不在PATH中，务必在前面加上`./`，因为`runcsr`用的是`execvp`系统调用
+* 套用`bash`运行，将benchmark的输出屏蔽掉
+  ```bash
+  $ ./runcsr bash -c "./gcc_base.rv64 166.i -o 166.s >/dev/null 2>&1" 2>output.log
+  ```
+
+#### 关于输出
+* `runcsr`每隔60秒输出一次，输出格式为JSON，一次一行（以`\n`为界）
+* 一段示例输出如下所示
+  ```bash
+  {"time":0.000020,"hpms":[64853,31771,83,59619,40856,19351,48972,5240,58258,23336,9135,63827,29214,38282,56573,45491]}
+  {"time":60.038576,"hpms":[64968,31879,106,59635,40982,19356,49041,5374,58339,23412,9371,64006,29383,38436,56781,45605]}
+  {"time":120.063710,"hpms":[65156,31885,282,59747,41185,19513,49243,5533,58569,23519,9472,64208,29531,38531,57000,45760]}
+  ...
+  ```
+  * `time`：从runcsr启动开始的时间，秒
+  * `hpms`：性能计数器的值，具体顺序请在`runcsr.c`中自行设置；和前面一样，请务必只读已经定义的CSR
+* 为了防止terminal断开导致结果消失，但又希望在terminal上及时看到结果，`runcsr`会同时将结果同时输出到`stdout`和`stderr`，你应该将其中一个重定向到log文件，否则会看到两行一样的输出
+
+### 可视化
+
