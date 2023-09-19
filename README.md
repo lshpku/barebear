@@ -2,6 +2,17 @@
 
 A Baremetal Test Framework for RISC-V
 
+### 声明
+本repo是本人研一期间实验室科研项目的软件代码部分（硬件代码不便公开），项目的部分报告成果如下
+
+#### BOOMv3访存单元（LSU）代码阅读
+此处为缩略图，点击查看[完整版PDF报告](https://lshpku.github.io/barebear/BOOM_LSU.pdf)
+![lsu-code-reading](https://lshpku.github.io/barebear/lsu-code-reading.jpg)
+
+#### BOOMv3移植控制流指令&读写PC指令
+此处为缩略图，点击查看[完整版PDF报告](https://lshpku.github.io/barebear/BOOM_cfi_pc.pdf)
+![cfi-pc](https://lshpku.github.io/barebear/cfi-pc.jpg)
+
 ## Uni-ld
 将C代码直接编译为UniCore32二进制并链接到RISC-V程序中
 
